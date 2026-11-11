@@ -1,0 +1,24 @@
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+.env*
+npm-debug.log*
+
+# Pre-rewrite copy of the original source
+.backup/
+
+# AI coding tool installs (skills, agents, local settings). Reinstall per machine.
+.agent/
+.agents/
+.claude/
+.codex/
+.cursor/
+.devin/
+.gemini/
+.kiro/
+.opencode/
+.pi/
+.qoder/
+.impeccable/
