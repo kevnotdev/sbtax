@@ -4,6 +4,7 @@ import React from 'react';
 import type { StepProps } from '../TaxApp';
 import type { Screening } from '@/lib/tax-engine/types';
 import { Button, Callout, Section, StepFooter, StepHeader, YesNo } from '../ui';
+import { ImportPriorReturn } from '../ImportPriorReturn';
 
 const QUESTIONS: { key: keyof Screening; legend: string; hint?: string }[] = [
   {
@@ -27,7 +28,7 @@ const QUESTIONS: { key: keyof Screening; legend: string; hint?: string }[] = [
 ];
 
 export function StartStep({
-  data, issues, update, next, onLoadSample, started,
+  data, issues, update, go, next, onLoadSample, started,
 }: StepProps & { onLoadSample: () => void; started: boolean }) {
   const s = data.screening;
   const answered = Object.values(s).every(v => v !== null);
@@ -73,6 +74,8 @@ export function StartStep({
           )}
         </div>
       )}
+
+      <ImportPriorReturn update={update} go={go} />
 
       <Section title="What to have nearby" hint="About 15 minutes if your numbers are ready.">
         <ul className="space-y-2.5 text-[0.9375rem] leading-relaxed text-sub">
