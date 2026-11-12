@@ -12,7 +12,7 @@ export function IncomeStep({ data, update, next, back }: StepProps) {
         file, and that return is much shorter.
       </StepHeader>
 
-      <div className="border-y border-line py-5">
+      <div data-anchor="activity" className="border-y border-line py-5">
         <YesNo
           legend="Did the company earn or spend any money this year?"
           hint="Count invoices, expenses and anything that moved through the bank account."
@@ -24,6 +24,7 @@ export function IncomeStep({ data, update, next, back }: StepProps) {
       {data.hadActivity === true && (
         <div className="mt-8">
           <MoneyField
+            anchor="revenue"
             label="Total revenue"
             hint="Everything you invoiced for work done this year, before GST/HST. Include invoices that haven’t been paid yet."
             value={data.revenue}

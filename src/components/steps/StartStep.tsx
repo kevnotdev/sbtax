@@ -40,7 +40,7 @@ export function StartStep({
         return we prepare for you will be right.
       </StepHeader>
 
-      <div className="divide-y divide-line border-y border-line">
+      <div data-anchor="screening" className="divide-y divide-line border-y border-line">
         {QUESTIONS.map(q => (
           <div key={q.key} className="py-5">
             <YesNo

@@ -4,11 +4,12 @@ import React from 'react';
 import { CircleCheck } from 'lucide-react';
 import type { StepProps } from '../TaxApp';
 import type { YearEndBalances } from '@/lib/tax-engine/types';
-import { isDate, isFirstYear, round2 } from '@/lib/tax-engine/calculator';
+import { diagnoseImbalance } from '@/lib/tax-engine/advice';
+import { isDate, isFirstYear } from '@/lib/tax-engine/calculator';
 import { dateLong, money } from '@/lib/format';
-import { Button, Callout, MoneyField, Section, StepFooter, StepHeader, cx } from '../ui';
+import { Callout, MoneyField, Section, StepFooter, StepHeader, Suggestions, cx } from '../ui';
 
-export function BalancesStep({ data, calc, update, next, back }: StepProps) {
+export function BalancesStep({ data, calc, update, go, next, back }: StepProps) {
   const b = data.balances;
   const bs = calc.balanceSheet;
   const firstYear = isFirstYear(data);
@@ -17,7 +18,7 @@ export function BalancesStep({ data, calc, update, next, back }: StepProps) {
     update(d => ({ ...d, balances: { ...d.balances, [key]: v } }));
 
   const enoughToCheck = b.cash !== null && b.shareCapital !== null;
-  const gap = Math.abs(bs.difference);
+  const diagnosis = enoughToCheck ? diagnoseImbalance(data, calc) : null;
 
   return (
     <>
@@ -29,6 +30,7 @@ export function BalancesStep({ data, calc, update, next, back }: StepProps) {
       <Section title="What the company had">
         <div className="grid gap-5 sm:grid-cols-2">
           <MoneyField
+            anchor="cash"
             label="Bank balance"
             hint="All company accounts, added together."
             value={b.cash}
@@ -36,6 +38,7 @@ export function BalancesStep({ data, calc, update, next, back }: StepProps) {
             allowNegative
           />
           <MoneyField
+            anchor="receivables"
             label="Unpaid invoices"
             hint="Invoices you’d sent that clients hadn’t paid yet."
             value={b.receivables}
@@ -47,12 +50,14 @@ export function BalancesStep({ data, calc, update, next, back }: StepProps) {
       <Section title="What the company owed">
         <div className="grid gap-5 sm:grid-cols-2">
           <MoneyField
+            anchor="payables"
             label="Unpaid bills and credit card"
             hint="The card balance plus any bills not yet paid."
             value={b.payables}
             onChange={set('payables')}
           />
           <MoneyField
+            anchor="salesTaxOwing"
             label="GST/HST not yet sent to CRA"
             hint="Collected from clients, less what you’d claimed. Negative if a refund was coming."
             value={b.salesTaxOwing}
@@ -60,6 +65,7 @@ export function BalancesStep({ data, calc, update, next, back }: StepProps) {
             allowNegative
           />
           <MoneyField
+            anchor="shareholderLoan"
             label="Owed to you"
             hint="Expenses you paid personally or money you lent the company, not yet repaid. Negative if you owed the company."
             value={b.shareholderLoan}
@@ -73,13 +79,15 @@ export function BalancesStep({ data, calc, update, next, back }: StepProps) {
         <Section title="Paid out during the year">
           <div className="grid gap-5 sm:grid-cols-2">
             <MoneyField
-              label="Dividends paid to you"
+              anchor="dividends"
+            label="Dividends paid to you"
               hint="Not salary. Salary goes under Expenses."
               value={data.dividendsPaid}
               onChange={v => update(d => ({ ...d, dividendsPaid: v }))}
             />
             <MoneyField
-              label="Tax instalments paid to CRA"
+              anchor="instalments"
+            label="Tax instalments paid to CRA"
               hint="Payments toward this year’s corporate tax. Most small companies paid none."
               value={data.instalmentsPaid}
               onChange={v => update(d => ({ ...d, instalmentsPaid: v }))}
@@ -91,6 +99,7 @@ export function BalancesStep({ data, calc, update, next, back }: StepProps) {
       <Section title={firstYear ? 'From when the company started' : 'Carried from earlier'}>
         <div className="grid gap-5 sm:grid-cols-2">
           <MoneyField
+            anchor="shareCapital"
             label="Paid for the company’s shares"
             hint="Often $1 or $100. It’s on your incorporation documents."
             value={b.shareCapital}
@@ -98,7 +107,8 @@ export function BalancesStep({ data, calc, update, next, back }: StepProps) {
           />
           {!firstYear && (
             <MoneyField
-              label="Retained earnings, end of last year"
+              anchor="openingRetainedEarnings"
+            label="Retained earnings, end of last year"
               hint="Last year’s return, Schedule 100, line 3600. Negative if it was a deficit."
               value={b.openingRetainedEarnings}
               onChange={set('openingRetainedEarnings')}
@@ -138,66 +148,23 @@ export function BalancesStep({ data, calc, update, next, back }: StepProps) {
         </div>
         <p className="mt-3 text-sm text-faint">Figures in italics are calculated from your other answers.</p>
 
-        <div className="mt-5">
+        <div className="mt-5" data-anchor="books-check">
           {!enoughToCheck ? (
             <Callout>Add the bank balance and the amount paid for shares, and we’ll check the two sides.</Callout>
           ) : bs.balanced ? (
             <p className="flex items-center gap-2.5 font-medium text-spruce-700">
               <CircleCheck className="h-5 w-5" aria-hidden /> Both sides match.
             </p>
-          ) : bs.difference > 0 ? (
-            <Callout
-              tone="warn"
-              title={`The company has ${money(gap)} more than these numbers explain`}
-              action={
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => update(d => ({
-                    ...d,
-                    balances: { ...d.balances, shareholderLoan: round2((d.balances.shareholderLoan ?? 0) + bs.difference) },
-                  }))}
-                >
-                  The company owes me {money(gap)}
-                </Button>
-              }
-            >
-              First check each number against your statements. If they’re right, the usual cause in
-              a one-person company is money you put in or expenses you paid personally that the
-              company hasn’t repaid.
-            </Callout>
-          ) : (
-            <Callout
-              tone="warn"
-              title={`The company has ${money(gap)} less than these numbers explain`}
-              action={
-                <div className="flex flex-wrap gap-2">
-                  {!calc.isNil && (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => update(d => ({ ...d, dividendsPaid: round2((d.dividendsPaid ?? 0) + gap) }))}
-                    >
-                      I took {money(gap)} as dividends
-                    </Button>
-                  )}
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => update(d => ({
-                      ...d,
-                      balances: { ...d.balances, shareholderLoan: round2((d.balances.shareholderLoan ?? 0) + bs.difference) },
-                    }))}
-                  >
-                    I owe the company {money(gap)}
-                  </Button>
-                </div>
-              }
-            >
-              First check each number against your statements. If they’re right, the usual cause is
-              money you took out that wasn’t recorded as salary or a dividend. Pick whichever is
-              true: a dividend is taxed on your personal return, and a loan has to be repaid within
-              a year.
+          ) : diagnosis && (
+            <Callout tone="warn" title={diagnosis.title}>
+              <p>{diagnosis.why}</p>
+              <p className="mt-2">
+                Check each number against your statements first. Only use a one-tap fix if it
+                describes what really happened.
+              </p>
+              <div className="mt-4">
+                <Suggestions items={diagnosis.suggestions} update={update} go={go} />
+              </div>
             </Callout>
           )}
         </div>

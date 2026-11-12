@@ -29,7 +29,8 @@ export interface StepProps {
   calc: Calculation;
   issues: Issue[];
   update: (change: (d: ReturnData) => ReturnData) => void;
-  go: (step: StepId) => void;
+  /** Opens a step. With an anchor, brings that field into view and puts the cursor in it. */
+  go: (step: StepId, anchor?: string) => void;
   next?: () => void;
   back?: () => void;
 }
@@ -73,6 +74,8 @@ export default function TaxApp() {
   const [loaded, setLoaded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  // The field a fix link asked for. `n` makes a repeat request for the same field count as new.
+  const [wanted, setWanted] = useState<{ anchor: string; n: number } | null>(null);
   const mainRef = useRef<HTMLElement>(null);
 
   /* Load whatever was saved on this device, then follow the address bar. */
@@ -133,13 +136,30 @@ export default function TaxApp() {
     if (loaded) setVisited(v => (v.includes(current) ? v : [...v, current]));
   }, [current, loaded]);
 
-  const go = useCallback((s: StepId) => {
+  const go = useCallback((s: StepId, anchor?: string) => {
     setMenuOpen(false);
     setStep(s);
     if (window.location.hash !== `#${s}`) window.history.pushState(null, '', `#${s}`);
     window.scrollTo({ top: 0 });
     mainRef.current?.focus({ preventScroll: true });
+    setWanted(w => (anchor ? { anchor, n: (w?.n ?? 0) + 1 } : null));
   }, []);
+
+  /* After a fix link: show the field it pointed at, mark it briefly, and start typing there. */
+  useEffect(() => {
+    if (!wanted) return;
+    const el = mainRef.current?.querySelector<HTMLElement>(`[data-anchor="${CSS.escape(wanted.anchor)}"]`);
+    if (!el) return;
+    el.scrollIntoView({ block: 'center' });
+    // On a row with a note and an amount, the amount is the thing to fix.
+    (el.querySelector<HTMLElement>('input[inputmode="decimal"]')
+      ?? el.querySelector<HTMLElement>('input:not([type="radio"]), select'))?.focus({ preventScroll: true });
+    el.classList.remove('anchor-flash');
+    void el.offsetWidth; // restart the animation when the same field is asked for twice
+    el.classList.add('anchor-flash');
+    const t = window.setTimeout(() => el.classList.remove('anchor-flash'), 2400);
+    return () => window.clearTimeout(t);
+  }, [wanted, current]);
 
   const update = useCallback((change: (d: ReturnData) => ReturnData) => {
     setData(change);

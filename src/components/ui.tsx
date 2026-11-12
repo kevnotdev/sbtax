@@ -2,6 +2,8 @@
 
 import React, { useEffect, useId, useState } from 'react';
 import { AlertCircle, ArrowLeft, ArrowRight, Info, TriangleAlert } from 'lucide-react';
+import type { Suggestion } from '@/lib/tax-engine/advice';
+import type { ReturnData } from '@/lib/tax-engine/types';
 
 export function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(' ');
@@ -88,10 +90,14 @@ const inputBase =
   'disabled:bg-ground disabled:text-faint';
 
 export function Field({
-  label, hint, htmlFor, children, className,
-}: { label: string; hint?: React.ReactNode; htmlFor: string; children: React.ReactNode; className?: string }) {
+  label, hint, htmlFor, children, className, anchor,
+}: {
+  label: string; hint?: React.ReactNode; htmlFor: string; children: React.ReactNode; className?: string;
+  /** Name a fix link can jump to. See `go(step, anchor)`. */
+  anchor?: string;
+}) {
   return (
-    <div className={className}>
+    <div className={className} data-anchor={anchor}>
       <label htmlFor={htmlFor} className="mb-1.5 block text-[0.9375rem] font-medium text-ink">{label}</label>
       {children}
       {hint && <p id={`${htmlFor}-hint`} className="mt-1.5 text-sm leading-snug text-faint">{hint}</p>}
@@ -101,12 +107,13 @@ export function Field({
 
 type TextProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> & {
   label: string; hint?: React.ReactNode; value: string; onChange: (v: string) => void; fieldClassName?: string;
+  anchor?: string;
 };
 
-export function TextField({ label, hint, value, onChange, fieldClassName, className, ...rest }: TextProps) {
+export function TextField({ label, hint, value, onChange, fieldClassName, className, anchor, ...rest }: TextProps) {
   const id = useId();
   return (
-    <Field label={label} hint={hint} htmlFor={id} className={fieldClassName}>
+    <Field label={label} hint={hint} htmlFor={id} className={fieldClassName} anchor={anchor}>
       <input
         id={id}
         type="text"
@@ -125,14 +132,14 @@ export function DateField(props: Omit<TextProps, 'type'>) {
 }
 
 export function SelectField({
-  label, hint, value, onChange, children, fieldClassName,
+  label, hint, value, onChange, children, fieldClassName, anchor,
 }: {
   label: string; hint?: React.ReactNode; value: string; onChange: (v: string) => void;
-  children: React.ReactNode; fieldClassName?: string;
+  children: React.ReactNode; fieldClassName?: string; anchor?: string;
 }) {
   const id = useId();
   return (
-    <Field label={label} hint={hint} htmlFor={id} className={fieldClassName}>
+    <Field label={label} hint={hint} htmlFor={id} className={fieldClassName} anchor={anchor}>
       <select
         id={id}
         value={value}
@@ -209,14 +216,14 @@ export function MoneyInput({
 }
 
 export function MoneyField({
-  label, hint, value, onChange, allowNegative, fieldClassName,
+  label, hint, value, onChange, allowNegative, fieldClassName, anchor,
 }: {
   label: string; hint?: React.ReactNode; value: number | null; onChange: (v: number | null) => void;
-  allowNegative?: boolean; fieldClassName?: string;
+  allowNegative?: boolean; fieldClassName?: string; anchor?: string;
 }) {
   const id = useId();
   return (
-    <Field label={label} hint={hint} htmlFor={id} className={fieldClassName}>
+    <Field label={label} hint={hint} htmlFor={id} className={fieldClassName} anchor={anchor}>
       <MoneyInput
         id={id}
         value={value}
@@ -296,6 +303,48 @@ export function Callout({
         {children && <div className={cx(title && 'mt-0.5')}>{children}</div>}
         {action && <div className="mt-3">{action}</div>}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Ways to fix a problem. Each one either makes the change in one tap
+ * or takes the person to the field that needs checking.
+ */
+export function Suggestions({
+  items, update, go, heading = 'What would fix it',
+}: {
+  items: Suggestion[];
+  update: (change: (d: ReturnData) => ReturnData) => void;
+  go: (step: NonNullable<Suggestion['goTo']>['step'], anchor?: string) => void;
+  heading?: string;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <p className="text-sm font-semibold">{heading}</p>
+      <ul className="mt-2 space-y-2">
+        {items.map(s => (
+          <li key={s.id} className="rounded-xl bg-white/75 p-3 text-ink">
+            <p className="text-[0.9375rem] leading-relaxed">{s.text}</p>
+            {s.apply && (
+              <Button size="sm" className="mt-2.5 h-auto min-h-9 py-1.5 text-left" onClick={() => update(s.apply!.change)}>
+                {s.apply.label}
+              </Button>
+            )}
+            {s.goTo && (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-2.5 h-auto min-h-9 py-1.5 text-left"
+                onClick={() => go(s.goTo!.step, s.goTo!.anchor)}
+              >
+                {s.goTo.label} <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
+              </Button>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

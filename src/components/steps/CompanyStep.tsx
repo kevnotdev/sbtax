@@ -27,6 +27,7 @@ export function CompanyStep({ data, issues, update, next, back }: StepProps) {
 
       <div className="grid gap-5 sm:grid-cols-2">
         <TextField
+          anchor="legalName"
           label="Legal name"
           hint="Exactly as registered, including Inc., Ltd. or Corp."
           value={c.legalName}
@@ -35,6 +36,7 @@ export function CompanyStep({ data, issues, update, next, back }: StepProps) {
           fieldClassName="sm:col-span-2"
         />
         <TextField
+          anchor="businessNumber"
           label="Business number"
           hint="The 9 digits before RC0001."
           value={formatBusinessNumber(c.businessNumber)}
@@ -44,6 +46,7 @@ export function CompanyStep({ data, issues, update, next, back }: StepProps) {
           autoComplete="off"
         />
         <SelectField
+          anchor="province"
           label="Province or territory"
           hint="Where the company does its work."
           value={c.province}
@@ -65,18 +68,21 @@ export function CompanyStep({ data, issues, update, next, back }: StepProps) {
       >
         <div className="grid gap-5 sm:grid-cols-2">
           <DateField
+            anchor="incorporationDate"
             label="Incorporation date"
             value={c.incorporationDate}
             onChange={v => set('incorporationDate', v)}
             fieldClassName="sm:col-span-2 sm:max-w-[calc(50%-0.625rem)]"
           />
           <DateField
+            anchor="yearStart"
             label="First day of the tax year"
             hint="For a brand-new company, the incorporation date."
             value={c.yearStart}
             onChange={v => set('yearStart', v)}
           />
           <DateField
+            anchor="yearEnd"
             label="Last day of the tax year"
             value={c.yearEnd}
             onChange={v => set('yearEnd', v)}
@@ -99,6 +105,7 @@ export function CompanyStep({ data, issues, update, next, back }: StepProps) {
       <Section title="Head office address">
         <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_10rem]">
           <TextField
+            anchor="street"
             label="Street address"
             value={c.street}
             onChange={v => set('street', v)}
@@ -107,6 +114,7 @@ export function CompanyStep({ data, issues, update, next, back }: StepProps) {
           />
           <TextField label="City" value={c.city} onChange={v => set('city', v)} autoComplete="address-level2" />
           <TextField
+            anchor="postalCode"
             label="Postal code"
             value={c.postalCode}
             onChange={v => set('postalCode', v.toUpperCase().slice(0, 7))}

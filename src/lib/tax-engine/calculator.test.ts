@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { addMonths, calculate, daysInclusive, provincialRate } from './calculator';
-import { findIssues, passesLuhn, readyToFile } from './checks';
+import { diagnoseImbalance } from './advice';
+import { findIssues, issueTarget, passesLuhn, readyToFile } from './checks';
 import { firstYearWriteOff } from './rates';
 import { EMPTY_RETURN, SAMPLE_RETURN } from './sample';
 import type { ReturnData } from './types';
@@ -132,4 +133,66 @@ test('date helpers', () => {
   assert.equal(addMonths('2025-06-15', 6), '2025-12-15');
   assert.equal(passesLuhn('123456782'), true);
   assert.equal(passesLuhn('123456789'), false);
+});
+
+/* ---- Advice: why the books are out, and what fixes them ---- */
+
+/** $10,000 revenue, $50,000 of internet, $30,000 in the bank: a $40,000 loss and books out by $70,000. */
+function lossWithCash(): ReturnData {
+  const d = clone(SAMPLE_RETURN);
+  d.revenue = 10000;
+  d.expenses = [{ id: 'x1', category: 'phone', note: '', amount: 50000 }];
+  d.assets = [];
+  d.dividendsPaid = 0;
+  d.balances = {
+    cash: 30000, receivables: 0, payables: 0, salesTaxOwing: 0,
+    shareholderLoan: 0, shareCapital: 0, openingRetainedEarnings: 0,
+  };
+  return d;
+}
+
+test('unbalanced books: the issue says why and points at the fix', () => {
+  const d = lossWithCash();
+  const c = calculate(d);
+  near(c.taxLoss, 40000);
+  near(c.balanceSheet.difference, 70000);
+
+  const issues = findIssues(d, c, '2026-11-10');
+  const unbalanced = issues.find(i => i.id === 'unbalanced')!;
+  assert.deepEqual(issueTarget(unbalanced), { step: 'balances', anchor: 'books-check' });
+  assert.match(unbalanced.detail!, /\$40,000\.00 more than it earned/);
+
+  const ids = unbalanced.suggestions!.map(s => s.id);
+  assert.equal(ids[0], 'outlier-expense', 'the $50,000 phone bill is flagged first');
+  assert.deepEqual(unbalanced.suggestions![0].goTo, {
+    label: 'Check phone and internet', step: 'expenses', anchor: 'expense-x1',
+  });
+
+  // The one-tap fix really does make the two sides match.
+  const fixed = unbalanced.suggestions!.find(s => s.id === 'owner-lent')!.apply!.change(d);
+  near(fixed.balances.shareholderLoan!, 70000);
+  assert.equal(calculate(fixed).balanceSheet.balanced, true);
+
+  // The loss sends people to the number most likely to be wrong, not to a dead end.
+  const loss = issues.find(i => i.id === 'loss')!;
+  assert.deepEqual(issueTarget(loss), { step: 'expenses', anchor: 'expense-x1' });
+});
+
+test('books short of cash: dividend and loan fixes both balance', () => {
+  const d = clone(SAMPLE_RETURN);
+  d.balances.cash = 104551; // $10,000 less than the books explain
+  const diagnosis = diagnoseImbalance(d, calculate(d))!;
+  assert.match(diagnosis.title, /\$10,000\.00 less/);
+  for (const id of ['dividends', 'owner-borrowed']) {
+    const fix = diagnosis.suggestions.find(s => s.id === id)!.apply!.change(d);
+    assert.equal(calculate(fix).balanceSheet.balanced, true, id);
+  }
+  assert.equal(diagnoseImbalance(SAMPLE_RETURN, calculate(SAMPLE_RETURN)), null);
+});
+
+test('every blocker and warning has somewhere to send the person', () => {
+  const issues = findIssues(EMPTY_RETURN, calculate(EMPTY_RETURN), '2026-11-10');
+  for (const i of issues.filter(x => x.level !== 'note')) {
+    assert.ok(issueTarget(i).anchor, `${i.id} has no anchor`);
+  }
 });

@@ -4,14 +4,14 @@ import React from 'react';
 import { ChevronRight, CircleCheck } from 'lucide-react';
 import type { StepProps } from '../TaxApp';
 import type { Calculation, ReturnData } from '@/lib/tax-engine/types';
-import { readyToFile, type Issue } from '@/lib/tax-engine/checks';
+import { issueTarget, readyToFile, type Issue } from '@/lib/tax-engine/checks';
 import {
   ASSET_KINDS, EXPENSE_CATEGORY_BY_ID, FEDERAL_ABATEMENT, FEDERAL_BASE_RATE, PROVINCES, SMALL_BUSINESS_DEDUCTION,
 } from '@/lib/tax-engine/rates';
 import { dateLong, formatBusinessNumber, money, percent } from '@/lib/format';
-import { Callout, Row, Section, StepFooter, StepHeader } from '../ui';
+import { Row, Section, StepFooter, StepHeader, Suggestions } from '../ui';
 
-export function ReviewStep({ data, calc, issues, go, next, back }: StepProps) {
+export function ReviewStep({ data, calc, issues, update, go, next, back }: StepProps) {
   const blockers = issues.filter(i => i.level === 'blocker' && i.step !== 'file');
   const warnings = issues.filter(i => i.level === 'warning');
   const notes = issues.filter(i => i.level === 'note');
@@ -34,13 +34,13 @@ export function ReviewStep({ data, calc, issues, go, next, back }: StepProps) {
           <h2 className="px-3 pb-1 pt-2 font-semibold text-bad-ink">
             {blockers.length === 1 ? 'One thing to fix before filing' : `${blockers.length} things to fix before filing`}
           </h2>
-          <IssueList items={blockers} go={go} tone="bad" />
+          <IssueList items={blockers} go={go} update={update} tone="bad" />
         </div>
       )}
 
       {warnings.length > 0 && (
         <Section title="Worth a second look">
-          <div className="-mx-3"><IssueList items={warnings} go={go} /></div>
+          <div className="-mx-3"><IssueList items={warnings} go={go} update={update} /></div>
         </Section>
       )}
 
@@ -135,31 +135,52 @@ export function ReviewStep({ data, calc, issues, go, next, back }: StepProps) {
   );
 }
 
-function IssueList({ items, go, tone }: { items: Issue[]; go: StepProps['go']; tone?: 'bad' }) {
+/**
+ * Each problem opens the screen and field where it gets fixed. Problems with known
+ * causes also list their fixes right here, so the likely one is a single tap.
+ */
+function IssueList({
+  items, go, update, tone,
+}: { items: Issue[]; go: StepProps['go']; update: StepProps['update']; tone?: 'bad' }) {
+  const bad = tone === 'bad';
   return (
-    <ul>
-      {items.map(i => (
-        <li key={i.id}>
-          <button
-            type="button"
-            onClick={() => go(i.step === 'review' ? 'income' : i.step)}
-            className={
-              'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors duration-150 ' +
-              (tone === 'bad' ? 'hover:bg-white/70' : 'hover:bg-ground')
-            }
-          >
-            <span className="min-w-0 flex-1">
-              <span className={'block font-medium ' + (tone === 'bad' ? 'text-bad-ink' : 'text-ink')}>{i.title}</span>
-              {i.detail && (
-                <span className={'block text-[0.9375rem] leading-relaxed ' + (tone === 'bad' ? 'text-bad-ink/90' : 'text-sub')}>
-                  {i.detail}
-                </span>
-              )}
-            </span>
-            <ChevronRight className={'h-4 w-4 shrink-0 ' + (tone === 'bad' ? 'text-bad-ink' : 'text-faint')} aria-hidden />
-          </button>
-        </li>
-      ))}
+    <ul className={bad ? 'divide-y divide-bad-line/60' : undefined}>
+      {items.map(i => {
+        const target = issueTarget(i);
+        return (
+          <li key={i.id}>
+            <button
+              type="button"
+              onClick={() => go(target.step, target.anchor)}
+              className={
+                'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors duration-150 ' +
+                (bad ? 'hover:bg-white/70' : 'hover:bg-ground')
+              }
+            >
+              <span className="min-w-0 flex-1">
+                <span className={'block font-medium ' + (bad ? 'text-bad-ink' : 'text-ink')}>{i.title}</span>
+                {i.detail && (
+                  <span className={'block text-[0.9375rem] leading-relaxed ' + (bad ? 'text-bad-ink/90' : 'text-sub')}>
+                    {i.detail}
+                  </span>
+                )}
+              </span>
+              <span
+                className={
+                  'flex shrink-0 items-center gap-1 text-sm font-semibold ' + (bad ? 'text-bad-ink' : 'text-spruce-700')
+                }
+              >
+                {bad ? 'Fix' : 'Check'} <ChevronRight className="h-4 w-4" aria-hidden />
+              </span>
+            </button>
+            {i.suggestions && i.suggestions.length > 0 && (
+              <div className={'px-3 pb-3 pt-1 ' + (bad ? 'text-bad-ink' : 'text-ink')}>
+                <Suggestions items={i.suggestions} update={update} go={go} />
+              </div>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }

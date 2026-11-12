@@ -54,6 +54,22 @@
   }
 }
 
+/* The field a fix link jumped to, marked long enough to find it. */
+@keyframes anchor-flash {
+  0%, 55% {
+    box-shadow: 0 0 0 8px rgba(240, 195, 90, 0.5);
+    background-color: rgba(252, 242, 217, 0.9);
+  }
+  100% {
+    box-shadow: 0 0 0 8px rgba(240, 195, 90, 0);
+    background-color: transparent;
+  }
+}
+.anchor-flash {
+  border-radius: 10px;
+  animation: anchor-flash 2.4s ease-out;
+}
+
 /* A newly added row settles into place. */
 @keyframes rise {
   from {

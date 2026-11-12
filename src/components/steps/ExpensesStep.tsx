@@ -5,6 +5,7 @@ import { Plus, Search, Trash2 } from 'lucide-react';
 import type { StepProps } from '../TaxApp';
 import type { ExpenseCategoryId, ExpenseLine } from '@/lib/tax-engine/types';
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_BY_ID } from '@/lib/tax-engine/rates';
+import { expenseAnchor } from '@/lib/tax-engine/advice';
 import { money } from '@/lib/format';
 import { Button, MoneyInput, StepFooter, StepHeader, cx } from '../ui';
 
@@ -55,6 +56,7 @@ export function ExpensesStep({ data, calc, update, next, back }: StepProps) {
               <li
                 key={line.id}
                 data-line={line.id}
+                data-anchor={expenseAnchor(line.id)}
                 className={cx(
                   'grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 py-4 sm:grid-cols-[minmax(0,1fr)_11rem_2.75rem]',
                   justAdded === line.id && 'motion-safe:animate-[rise_0.28s_cubic-bezier(0.16,1,0.3,1)]',
@@ -109,7 +111,7 @@ export function ExpensesStep({ data, calc, update, next, back }: StepProps) {
       )}
 
       {picking ? (
-        <div className={cx('rounded-2xl bg-ground p-4 sm:p-5', data.expenses.length > 0 && 'mt-6')}>
+        <div data-anchor="add-expense" className={cx('rounded-2xl bg-ground p-4 sm:p-5', data.expenses.length > 0 && 'mt-6')}>
           <div className="relative">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[1.125rem] w-[1.125rem] -translate-y-1/2 text-faint" aria-hidden />
             <input
@@ -151,9 +153,11 @@ export function ExpensesStep({ data, calc, update, next, back }: StepProps) {
           )}
         </div>
       ) : (
-        <Button variant="secondary" className="mt-6" onClick={() => setPicking(true)}>
-          <Plus className="h-4 w-4" aria-hidden /> Add an expense
-        </Button>
+        <div data-anchor="add-expense" className="mt-6 inline-block">
+          <Button variant="secondary" onClick={() => setPicking(true)}>
+            <Plus className="h-4 w-4" aria-hidden /> Add an expense
+          </Button>
+        </div>
       )}
 
       <StepFooter onBack={back} onNext={next} />

@@ -97,7 +97,7 @@ export function FileStep({
         title="Who is signing"
         hint="A director or officer of the company certifies the return. For a one-person company, that’s you."
       >
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div data-anchor="signer" className="grid gap-5 sm:grid-cols-2">
           <TextField
             label="Full name"
             value={data.owner.name}

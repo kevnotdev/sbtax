@@ -36,7 +36,7 @@ export function EquipmentStep({ data, calc, issues, update, next, back }: StepPr
             const dateIssue = issues.find(x => x.id === `asset-date-${asset.id}`);
             const costId = `cost-${asset.id}`;
             return (
-              <li key={asset.id} className="rounded-2xl border border-line p-5">
+              <li key={asset.id} data-anchor={`asset-${asset.id}`} className="rounded-2xl border border-line p-5">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <TextField
                     label="What was it?"
