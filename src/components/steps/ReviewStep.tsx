@@ -4,7 +4,7 @@ import React from 'react';
 import { ChevronRight, CircleCheck } from 'lucide-react';
 import type { StepProps } from '../TaxApp';
 import type { Calculation, ReturnData } from '@/lib/tax-engine/types';
-import { issueTarget, readyToFile, type Issue } from '@/lib/tax-engine/checks';
+import { issueTarget, readyToFile, yearStillOpen, type Issue } from '@/lib/tax-engine/checks';
 import {
   ASSET_KINDS, EXPENSE_CATEGORY_BY_ID, FEDERAL_ABATEMENT, FEDERAL_BASE_RATE, PROVINCES, SMALL_BUSINESS_DEDUCTION,
 } from '@/lib/tax-engine/rates';
@@ -27,7 +27,10 @@ export function ReviewStep({ data, calc, issues, update, go, next, back }: StepP
 
       {ready ? (
         <p className="flex items-center gap-2.5 text-[1.0625rem] font-medium text-spruce-700">
-          <CircleCheck className="h-5 w-5" aria-hidden /> Everything checks out. The return is ready to file.
+          <CircleCheck className="h-5 w-5 shrink-0" aria-hidden />{' '}
+          {yearStillOpen(issues)
+            ? `Everything checks out so far. It can be filed after ${dateLong(data.company.yearEnd)}.`
+            : 'Everything checks out. The return is ready to file.'}
         </p>
       ) : (
         <div className="rounded-2xl border border-bad-line bg-bad-bg p-2">
@@ -59,6 +62,21 @@ export function ReviewStep({ data, calc, issues, update, go, next, back }: StepP
                   label="Half of meals, added back"
                   sub="Only 50% of meals and entertainment is deductible"
                   value={money(calc.mealsNonDeductible)}
+                />
+              )}
+              {calc.taxLoss > 0 && (
+                <Row
+                  strong
+                  label="Loss for the year"
+                  sub="Carries forward to reduce tax in future years"
+                  value={money(-calc.taxLoss)}
+                />
+              )}
+              {calc.lossApplied > 0 && (
+                <Row
+                  label="Losses from earlier years, used"
+                  sub={calc.lossClosing > 0 ? `${money(calc.lossClosing)} left for future years` : 'None left for future years'}
+                  value={money(-calc.lossApplied)}
                 />
               )}
               <Row strong label="Taxable income" value={money(calc.taxableIncome)} />
@@ -131,6 +149,18 @@ export function ReviewStep({ data, calc, issues, update, go, next, back }: StepP
       </Section>
 
       <StepFooter onBack={back} onNext={next} nextLabel="Continue to filing" nextDisabled={!ready} />
+      {!ready && (
+        <p className="mt-3 text-right text-sm text-faint">
+          {blockers.length === 1 ? 'One thing needs' : `${blockers.length} things need`} fixing first.{' '}
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="font-medium text-spruce-700 underline underline-offset-4"
+          >
+            Show me
+          </button>
+        </p>
+      )}
     </>
   );
 }
@@ -174,8 +204,8 @@ function IssueList({
               </span>
             </button>
             {i.suggestions && i.suggestions.length > 0 && (
-              <div className={'px-3 pb-3 pt-1 ' + (bad ? 'text-bad-ink' : 'text-ink')}>
-                <Suggestions items={i.suggestions} update={update} go={go} />
+              <div className={'px-3 pb-3 pt-1 ' + (bad ? 'text-bad-ink' : 'rounded-xl bg-ground py-3 text-ink')}>
+                <Suggestions items={i.suggestions} update={update} go={go} heading={bad ? undefined : 'If that looks wrong'} />
               </div>
             )}
           </li>
@@ -205,6 +235,9 @@ function buildForms(data: ReturnData, calc: Calculation): Form[] {
         { line: '060', label: 'Tax year start', value: c.yearStart },
         { line: '061', label: 'Tax year end', value: c.yearEnd },
         { line: '300', label: 'Net income for income tax purposes', value: m(calc.netIncomeForTax) },
+        ...(calc.lossApplied > 0
+          ? [{ line: '331', label: 'Non-capital losses of previous tax years', value: m(calc.lossApplied) }]
+          : []),
         { line: '360', label: 'Taxable income', value: m(calc.taxableIncome) },
         { line: '400', label: 'Income from active business', value: m(calc.taxableIncome) },
         { line: '410', label: 'Business limit', value: m(calc.businessLimit) },
@@ -247,6 +280,19 @@ function buildForms(data: ReturnData, calc: Calculation): Form[] {
         ]),
       });
     }
+  }
+
+  if (calc.lossOpening > 0 || calc.taxLoss > 0) {
+    forms.push({
+      code: 'Schedule 4',
+      name: 'Losses carried to other years',
+      lines: [
+        { line: '102', label: 'Non-capital losses at the end of the previous tax year', value: m(calc.lossOpening) },
+        { line: '110', label: 'Add: non-capital loss for this tax year', value: m(calc.taxLoss) },
+        { line: '130', label: 'Deduct: applied against this year’s taxable income', value: m(calc.lossApplied) },
+        { line: '180', label: 'Non-capital losses carried forward', value: m(calc.lossClosing) },
+      ],
+    });
   }
 
   forms.push({

@@ -4,7 +4,7 @@ import React, { useId, useState } from 'react';
 import { CircleCheck } from 'lucide-react';
 import type { DemoFiling, StepProps } from '../TaxApp';
 import { DEMO_FILING, FILING_FEE } from '@/lib/brand';
-import { readyToFile } from '@/lib/tax-engine/checks';
+import { readyToFile, yearStillOpen } from '@/lib/tax-engine/checks';
 import { dateLong, formatBusinessNumber, money } from '@/lib/format';
 import { Button, Callout, Row, Section, StepFooter, StepHeader, TextField } from '../ui';
 
@@ -13,7 +13,8 @@ export function FileStep({
 }: StepProps & { filing: DemoFiling | null; onFiled: (f: DemoFiling | null) => void }) {
   const [certified, setCertified] = useState(false);
   const certifyId = useId();
-  const ready = readyToFile(issues);
+  const tooEarly = yearStillOpen(issues);
+  const ready = readyToFile(issues) && !tooEarly;
   const signed = data.owner.name.trim() !== '' && data.owner.title.trim() !== '';
   const notes = issues.filter(i => i.level === 'note');
 
@@ -81,7 +82,16 @@ export function FileStep({
         </Callout>
       )}
 
-      {!ready && (
+      {tooEarly && (
+        <div className="mt-5">
+          <Callout tone="bad" title="This tax year hasn’t ended yet">
+            CRA only accepts a return once the year is over. Everything you’ve entered is saved, so come back
+            after {dateLong(data.company.yearEnd)} to file.
+          </Callout>
+        </div>
+      )}
+
+      {!ready && !tooEarly && (
         <div className="mt-5">
           <Callout
             tone="bad"

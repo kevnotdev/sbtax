@@ -206,6 +206,8 @@ export function MoneyInput({
         onChange={e => {
           const raw = e.target.value;
           if (!/^[-−(]?[\d,.\s$]*\)?$/.test(raw)) return;
+          // Where a negative makes no sense, refuse the minus sign instead of quietly dropping it.
+          if (!allowNegative && /^[-−(]/.test(raw)) return;
           setText(raw);
           onChange(parseAmount(raw, allowNegative));
         }}

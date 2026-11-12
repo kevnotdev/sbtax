@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { addMonths, calculate, daysInclusive, provincialRate } from './calculator';
 import { diagnoseImbalance } from './advice';
-import { findIssues, issueTarget, passesLuhn, readyToFile } from './checks';
+import { findIssues, issueTarget, passesLuhn, readyToFile, yearStillOpen } from './checks';
 import { firstYearWriteOff } from './rates';
 import { EMPTY_RETURN, SAMPLE_RETURN } from './sample';
 import type { ReturnData } from './types';
@@ -115,7 +115,8 @@ test('scope limits are blockers, not silent wrong answers', () => {
   loss.revenue = 1000;
   const lc = calculate(loss);
   assert.equal(lc.totalTax, 0);
-  assert.ok(findIssues(loss, lc, '2026-11-10').some(i => i.id === 'loss'));
+  // A loss is flagged for a second look but no longer blocks filing.
+  assert.equal(findIssues(loss, lc, '2026-11-10').find(i => i.id === 'loss')!.level, 'warning');
 
   const qc = clone(SAMPLE_RETURN);
   qc.company.province = 'QC';
@@ -195,4 +196,63 @@ test('every blocker and warning has somewhere to send the person', () => {
   for (const i of issues.filter(x => x.level !== 'note')) {
     assert.ok(issueTarget(i).anchor, `${i.id} has no anchor`);
   }
+});
+
+/* ---- Loss years and losses carried forward ---- */
+
+test('a loss year files with no tax and carries the loss forward', () => {
+  const d = lossWithCash();
+  d.balances.shareholderLoan = 70000; // the owner funded the shortfall, so the books tie
+  const c = calculate(d);
+  near(c.taxLoss, 40000);
+  near(c.totalTax, 0);
+  near(c.lossClosing, 40000);
+  assert.equal(c.balanceSheet.balanced, true);
+  const issues = findIssues(d, c, '2026-11-12');
+  assert.equal(readyToFile(issues), true);
+  assert.match(issues.find(i => i.id === 'loss')!.detail!, /\$40,000\.00/);
+});
+
+test('earlier losses reduce taxable income, but not below zero', () => {
+  const d = clone(SAMPLE_RETURN);
+  d.priorLosses = 31376;
+  const c = calculate(d);
+  near(c.lossApplied, 31376);
+  near(c.taxableIncome, 100000);
+  near(c.federalTax, 9000);
+  near(c.lossClosing, 0);
+
+  d.priorLosses = 200000;
+  const big = calculate(d);
+  near(big.lossApplied, 131376);
+  near(big.taxableIncome, 0);
+  near(big.totalTax, 0);
+  near(big.lossClosing, 68624);
+
+  // A loss on top of earlier losses adds to the balance instead of using it.
+  d.revenue = 1000;
+  const again = calculate(d);
+  near(again.lossApplied, 0);
+  near(again.lossClosing, 200000 + again.taxLoss);
+
+  // A brand-new company has no earlier years to bring losses from.
+  d.company.incorporationDate = d.company.yearStart;
+  near(calculate(d).lossOpening, 0);
+});
+
+test('no-activity year ignores dividends and instalments left from an earlier answer', () => {
+  const d = clone(SAMPLE_RETURN);
+  d.hadActivity = false;
+  d.instalmentsPaid = 5000;
+  const c = calculate(d);
+  near(c.balanceSheet.dividends, 0);
+  near(c.balanceOwing, 0);
+  near(c.balanceSheet.retainedEarnings, 24500);
+});
+
+test('a tax year that has not ended can be prepared but not filed', () => {
+  const issues = (today: string) => findIssues(SAMPLE_RETURN, calculate(SAMPLE_RETURN), today);
+  assert.equal(yearStillOpen(issues('2025-12-31')), true); // last day of the year
+  assert.equal(yearStillOpen(issues('2026-01-01')), false);
+  assert.equal(readyToFile(issues('2025-12-31')), true); // nothing to fix, only to wait for
 });

@@ -77,11 +77,14 @@ export default function TaxApp() {
   // The field a fix link asked for. `n` makes a repeat request for the same field count as new.
   const [wanted, setWanted] = useState<{ anchor: string; n: number } | null>(null);
   const mainRef = useRef<HTMLElement>(null);
+  // The sample company is kept apart, so trying it never replaces a return someone has started.
+  const storageKey = useRef(STORAGE_KEY);
 
   /* Load whatever was saved on this device, then follow the address bar. */
   useEffect(() => {
     try {
       if (new URLSearchParams(window.location.search).has('sample')) {
+        storageKey.current = `${STORAGE_KEY}.sample`;
         setData(SAMPLE_RETURN);
         setVisited(ALL_STEPS.filter(s => s !== 'file'));
       } else {
@@ -116,7 +119,7 @@ export default function TaxApp() {
   useEffect(() => {
     if (!loaded) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ data, visited, filing } satisfies Saved));
+      window.localStorage.setItem(storageKey.current, JSON.stringify({ data, visited, filing } satisfies Saved));
     } catch {
       // Private windows may refuse storage. The return still works for this visit.
     }

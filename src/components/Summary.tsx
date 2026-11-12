@@ -10,7 +10,7 @@ import { cx } from './ui';
 /** The running return: every figure links to the step that produced it. */
 export function Summary({
   data, calc, go,
-}: { data: ReturnData; calc: Calculation; go: (s: StepId) => void }) {
+}: { data: ReturnData; calc: Calculation; go: (s: StepId, anchor?: string) => void }) {
   const hasNumbers = data.hadActivity !== null;
   const refund = calc.balanceOwing < 0;
   const province = data.company.province ? PROVINCES[data.company.province].name : 'Provincial';
@@ -47,6 +47,10 @@ export function Summary({
           {calc.mealsNonDeductible > 0 && (
             <Line label="Half of meals" value={money(calc.mealsNonDeductible)} onClick={() => go('expenses')} />
           )}
+          {calc.lossApplied > 0 && (
+            <Line label="Earlier losses used" value={money(-calc.lossApplied)} onClick={() => go('balances', 'priorLosses')} />
+          )}
+          {calc.taxLoss > 0 && <Line label="Loss carried forward" value={money(calc.taxLoss)} />}
           <Line label="Taxable income" value={money(calc.taxableIncome)} total />
           <Line label={`Federal tax, ${percent(calc.federalRate)}`} value={money(calc.federalTax)} />
           <Line label={`${province} tax, ${percent(calc.provincialRate)}`} value={money(calc.provincialTax)} />

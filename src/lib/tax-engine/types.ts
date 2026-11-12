@@ -83,6 +83,8 @@ export interface ReturnData {
   openingUcc: { computer: Amount; equipment: Amount };
   dividendsPaid: Amount;
   instalmentsPaid: Amount;
+  /** Non-capital losses from earlier years not yet used (last year's Schedule 4 closing balance). */
+  priorLosses: Amount;
   balances: YearEndBalances;
   owner: Owner;
 }
@@ -126,6 +128,10 @@ export interface Calculation {
   taxableIncome: number;
   /** Positive when the year is a loss for tax purposes. */
   taxLoss: number;
+  /** Non-capital losses (Schedule 4): brought in, used against this year's income, and left for later years. */
+  lossOpening: number;
+  lossApplied: number;
+  lossClosing: number;
 
   businessLimit: number;
   overBusinessLimit: boolean;

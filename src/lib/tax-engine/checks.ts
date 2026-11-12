@@ -107,7 +107,7 @@ export function findIssues(data: ReturnData, calc: Calculation, today: string): 
         'The tax year can’t start before the company existed',
         `Set the first day of the tax year to ${dateLong(c.incorporationDate)}.`, { anchor: 'yearStart' });
     }
-    if (c.yearEnd > today) {
+    if (c.yearEnd >= today) {
       add('warning', 'company', 'year-open', 'This tax year hasn’t ended yet',
         'You can prepare the return now, but it can only be filed after the last day of the year.', { anchor: 'yearEnd' });
     }
@@ -188,10 +188,11 @@ export function findIssues(data: ReturnData, calc: Calculation, today: string): 
 
   /* ---- Things the return can't handle ---- */
   if (calc.taxLoss > 0) {
-    add('blocker', 'review', 'loss', `The company lost ${money(calc.taxLoss)} this year`,
-      `You entered ${money(calc.revenue)} of revenue and ${money(calc.totalExpenses)} of expenses. If those are right, `
-        + 'this return can’t be filed here: a loss can be carried to other years to reduce tax, which isn’t supported yet. '
-        + 'If one of them is wrong, fixing it clears this.',
+    add('warning', 'review', 'loss', `The company lost ${money(calc.taxLoss)} this year`,
+      'No tax is owed. The loss isn’t wasted: it carries forward for up to 20 years and reduces tax in a profitable '
+        + `year. Next year’s return will ask for the unused amount, ${money(calc.lossClosing)}. `
+        + 'A loss can also be carried back up to 3 years for a refund of tax already paid. This return doesn’t do '
+        + 'that, and the request is due with this return, so talk to an accountant if the company paid tax in the last three years.',
       (() => {
         const suggestions = lossSuggestions(data, calc);
         const first = suggestions[0].goTo!;
@@ -231,4 +232,9 @@ export function stepStatus(step: StepId, issues: Issue[], visited: StepId[]): St
 /** Everything except the signature is in order. */
 export function readyToFile(issues: Issue[]): boolean {
   return !issues.some(i => i.level === 'blocker' && i.step !== 'file');
+}
+
+/** A return can be prepared early, but CRA only accepts it once the tax year is over. */
+export function yearStillOpen(issues: Issue[]): boolean {
+  return issues.some(i => i.id === 'year-open');
 }

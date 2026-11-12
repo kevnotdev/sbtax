@@ -126,8 +126,12 @@ export function calculate(data: ReturnData): Calculation {
   const totalExpenses = round2(operatingExpenses + amortization);
   const incomeBeforeTax = round2(revenue - totalExpenses);
   const netIncomeForTax = round2(incomeBeforeTax + mealsNonDeductible);
-  const taxableIncome = Math.max(0, netIncomeForTax);
   const taxLoss = Math.max(0, -netIncomeForTax);
+  // Losses from earlier years come off this year's income first (T2 line 331). They can't push it below zero.
+  const lossOpening = firstYear ? 0 : Math.max(0, num(data.priorLosses));
+  const lossApplied = round2(Math.min(lossOpening, Math.max(0, netIncomeForTax)));
+  const taxableIncome = round2(Math.max(0, netIncomeForTax) - lossApplied);
+  const lossClosing = round2(lossOpening - lossApplied + taxLoss);
 
   const businessLimit = round2(BUSINESS_LIMIT * yearFraction);
   const overBusinessLimit = taxableIncome > businessLimit;
@@ -138,7 +142,8 @@ export function calculate(data: ReturnData): Calculation {
   const federalTax = round2(taxableIncome * FEDERAL_SMALL_BUSINESS_RATE);
   const provincialTax = round2(taxableIncome * prov.rate);
   const totalTax = round2(federalTax + provincialTax);
-  const instalmentsPaid = Math.max(0, num(data.instalmentsPaid));
+  // A company with no activity paid nothing out, so amounts left over from an earlier answer don't count.
+  const instalmentsPaid = isNil ? 0 : Math.max(0, num(data.instalmentsPaid));
   const balanceOwing = round2(totalTax - instalmentsPaid);
   const netIncomeAfterTax = round2(incomeBeforeTax - totalTax);
 
@@ -160,7 +165,7 @@ export function calculate(data: ReturnData): Calculation {
   const totalLiabilities = round2(payables + taxesPayable + dueToShareholder);
   const shareCapital = num(b.shareCapital);
   const openingRetainedEarnings = firstYear ? 0 : num(b.openingRetainedEarnings);
-  const dividends = Math.max(0, num(data.dividendsPaid));
+  const dividends = isNil ? 0 : Math.max(0, num(data.dividendsPaid));
   const retainedEarnings = round2(openingRetainedEarnings + netIncomeAfterTax - dividends);
   const totalEquity = round2(shareCapital + retainedEarnings);
   const totalLiabilitiesAndEquity = round2(totalLiabilities + totalEquity);
@@ -182,6 +187,9 @@ export function calculate(data: ReturnData): Calculation {
     netIncomeForTax,
     taxableIncome,
     taxLoss,
+    lossOpening,
+    lossApplied,
+    lossClosing,
     businessLimit,
     overBusinessLimit,
     federalRate: FEDERAL_SMALL_BUSINESS_RATE,

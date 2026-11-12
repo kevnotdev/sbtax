@@ -115,7 +115,22 @@ export function BalancesStep({ data, calc, update, go, next, back }: StepProps) 
               allowNegative
             />
           )}
+          {!firstYear && (
+            <MoneyField
+              anchor="priorLosses"
+              label="Unused losses from earlier years"
+              hint="Last year’s return, Schedule 4, closing balance of non-capital losses. Leave empty if the company has never had a loss. Losses older than 20 years no longer count."
+              value={data.priorLosses}
+              onChange={v => update(d => ({ ...d, priorLosses: v }))}
+            />
+          )}
         </div>
+        {calc.lossApplied > 0 && (
+          <p className="mt-4 text-sm text-sub">
+            {money(calc.lossApplied)} of those losses comes off this year’s income.{' '}
+            {calc.lossClosing > 0 ? `${money(calc.lossClosing)} is left for future years.` : 'None is left for future years.'}
+          </p>
+        )}
       </Section>
 
       <Section

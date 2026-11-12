@@ -73,8 +73,11 @@ export function diagnoseImbalance(data: ReturnData, calc: Calculation): Diagnosi
     why = calc.netIncomeAfterTax < 0
       ? `The company spent ${money(-calc.netIncomeAfterTax)} more than it earned, yet finished the year with `
         + `${money(bs.totalAssets)}. Nothing entered so far says where ${money(gap)} of that came from.`
-      : `Profit, shares and debts explain ${money(bs.totalLiabilitiesAndEquity)}, but the company finished the year `
-        + `with ${money(bs.totalAssets)}. Nothing entered so far says where the other ${money(gap)} came from.`;
+      : bs.totalLiabilitiesAndEquity < 0
+        ? `From what you entered, the company should have ended the year ${money(-bs.totalLiabilitiesAndEquity)} short. `
+          + `Instead it had ${money(bs.totalAssets)}. Nothing entered so far says where ${money(gap)} came from.`
+        : `Profit, shares and debts explain ${money(bs.totalLiabilitiesAndEquity)}, but the company finished the year `
+          + `with ${money(bs.totalAssets)}. Nothing entered so far says where the other ${money(gap)} came from.`;
 
     suggestions.push({
       id: 'owner-lent',
@@ -146,7 +149,7 @@ export function diagnoseImbalance(data: ReturnData, calc: Calculation): Diagnosi
   };
 }
 
-/** A loss year can't be filed here, so the useful advice is where a wrong number would hide. */
+/** A real loss needs no fixing, so the useful advice is where a wrong number would hide. */
 export function lossSuggestions(data: ReturnData, calc: Calculation): Suggestion[] {
   const out: Suggestion[] = [];
   const top = largestExpense(data);

@@ -13,6 +13,7 @@ export const EMPTY_RETURN: ReturnData = {
   openingUcc: { computer: null, equipment: null },
   dividendsPaid: null,
   instalmentsPaid: null,
+  priorLosses: null,
   balances: {
     cash: null, receivables: null, payables: null, salesTaxOwing: null,
     shareholderLoan: null, shareCapital: null, openingRetainedEarnings: null,
@@ -48,6 +49,7 @@ export const SAMPLE_RETURN: ReturnData = {
   openingUcc: { computer: 0, equipment: 0 },
   dividendsPaid: 40000,
   instalmentsPaid: 0,
+  priorLosses: 0,
   balances: {
     cash: 114551,
     receivables: 5000,
