@@ -10,6 +10,7 @@ import { EMPTY_RETURN, SAMPLE_RETURN } from '@/lib/tax-engine/sample';
 import type { Calculation, ReturnData } from '@/lib/tax-engine/types';
 import { cx } from './ui';
 import { Summary } from './Summary';
+import { Splash, Welcome } from './Welcome';
 import { StartStep } from './steps/StartStep';
 import { CompanyStep } from './steps/CompanyStep';
 import { IncomeStep } from './steps/IncomeStep';
@@ -76,6 +77,10 @@ export default function TaxApp() {
   const [confirmReset, setConfirmReset] = useState(false);
   // The field a fix link asked for. `n` makes a repeat request for the same field count as new.
   const [wanted, setWanted] = useState<{ anchor: string; n: number } | null>(null);
+  // The front door, shown to someone arriving with nothing started. The splash plays over it once.
+  const [welcome, setWelcome] = useState(false);
+  const [splashGone, setSplashGone] = useState(false);
+  const startedRef = useRef(false);
   const mainRef = useRef<HTMLElement>(null);
   // The sample company is kept apart, so trying it never replaces a return someone has started.
   const storageKey = useRef(STORAGE_KEY);
@@ -85,6 +90,7 @@ export default function TaxApp() {
     try {
       if (new URLSearchParams(window.location.search).has('sample')) {
         storageKey.current = `${STORAGE_KEY}.sample`;
+        startedRef.current = true;
         setData(SAMPLE_RETURN);
         setVisited(ALL_STEPS.filter(s => s !== 'file'));
       } else {
@@ -92,7 +98,7 @@ export default function TaxApp() {
         if (raw) {
           const saved = JSON.parse(raw) as Partial<Saved>;
           if (saved.data) {
-            setData({
+            const merged: ReturnData = {
               ...EMPTY_RETURN,
               ...saved.data,
               screening: { ...EMPTY_RETURN.screening, ...saved.data.screening },
@@ -100,7 +106,9 @@ export default function TaxApp() {
               openingUcc: { ...EMPTY_RETURN.openingUcc, ...saved.data.openingUcc },
               balances: { ...EMPTY_RETURN.balances, ...saved.data.balances },
               owner: { ...EMPTY_RETURN.owner, ...saved.data.owner },
-            });
+            };
+            startedRef.current = JSON.stringify(merged) !== JSON.stringify(EMPTY_RETURN);
+            setData(merged);
           }
           if (Array.isArray(saved.visited)) setVisited(saved.visited.filter(s => ALL_STEPS.includes(s)));
           if (saved.filing) setFiling(saved.filing);
@@ -110,8 +118,13 @@ export default function TaxApp() {
       // Storage can be blocked or hold something unreadable; start fresh.
     }
     setStep(stepFromHash());
+    setWelcome(!startedRef.current && window.location.hash === '');
     setLoaded(true);
-    const onHash = () => setStep(stepFromHash());
+    const onHash = () => {
+      setStep(stepFromHash());
+      // Going back past the first step returns to the front door, unless a return is under way.
+      setWelcome(window.location.hash === '' && !startedRef.current);
+    };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
@@ -146,6 +159,7 @@ export default function TaxApp() {
     window.scrollTo({ top: 0 });
     mainRef.current?.focus({ preventScroll: true });
     setWanted(w => (anchor ? { anchor, n: (w?.n ?? 0) + 1 } : null));
+    setWelcome(false);
   }, []);
 
   /* After a fix link: show the field it pointed at, mark it briefly, and start typing there. */
@@ -194,6 +208,19 @@ export default function TaxApp() {
   const company = data.company.legalName.trim();
   const yearLabel = isDate(data.company.yearEnd) ? `Year ending ${dateLong(data.company.yearEnd)}` : 'New return';
   const started = JSON.stringify(data) !== JSON.stringify(EMPTY_RETURN);
+  startedRef.current = started;
+  const endSplash = useCallback(() => setSplashGone(true), []);
+
+  if (!loaded || welcome) {
+    return (
+      <>
+        {loaded && (
+          <Welcome key="welcome" onStart={() => go('start')} onSample={loadSample} onImport={() => go('start', 'import')} />
+        )}
+        {!splashGone && <Splash key="splash" play={loaded} onDone={endSplash} />}
+      </>
+    );
+  }
 
   const nav = (
     <ol className="space-y-0.5">

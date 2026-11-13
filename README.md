@@ -1,6 +1,6 @@
-# Corporate Tax (working name)
+# TaxPilot
 
-A plain-language T2 corporate tax return for one-person Canadian companies.
+A plain-language T2 corporate tax return for small incorporated businesses in Canada.
 
 ```
 npm run dev        # http://localhost:3000  (add ?sample to load a sample company)

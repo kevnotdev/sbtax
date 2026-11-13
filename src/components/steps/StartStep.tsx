@@ -37,7 +37,7 @@ export function StartStep({
   return (
     <>
       <StepHeader title="First, let’s check this fits your company">
-        This is built for one-person companies with simple books. Four questions make sure the
+        This is built for small incorporated businesses with simple books. Four questions make sure the
         return we prepare for you will be right.
       </StepHeader>
 
