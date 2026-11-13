@@ -84,10 +84,13 @@ export function Welcome({
       <div className="relative h-64 overflow-hidden bg-spruce-900 sm:h-80 lg:h-auto lg:min-h-screen">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={WELCOME_IMAGE.src} alt={WELCOME_IMAGE.alt} className="absolute inset-0 h-full w-full object-cover object-[center_60%] lg:object-center" />
-        <div className="absolute inset-0 bg-gradient-to-t from-spruce-950/80 via-spruce-950/10 to-transparent" aria-hidden />
-        <p className="absolute inset-x-0 bottom-0 hidden p-10 text-lg font-medium leading-snug text-white lg:block xl:p-14">
-          The return your accountant would prepare,
-          <span className="block text-spruce-100/85">explained the way you’d explain it to a friend.</span>
+        <div className="absolute inset-0 bg-gradient-to-t from-spruce-950/90 via-spruce-950/25 to-transparent" aria-hidden />
+        <p className="absolute inset-x-0 bottom-0 hidden p-10 text-4xl font-semibold leading-[1.1] tracking-tight text-white lg:block xl:p-14 xl:text-5xl xl:leading-[1.08]">
+          Tax time,
+          <span className="block">minus the stress.</span>
+          <span className="mt-4 block text-lg font-medium leading-snug tracking-normal text-spruce-100/85 xl:text-xl">
+            Your numbers in. A finished return out.
+          </span>
         </p>
       </div>
 
