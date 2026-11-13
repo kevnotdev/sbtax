@@ -3,26 +3,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check } from 'lucide-react';
 import { DEMO_FILING, PRODUCT_NAME, TAGLINE, WELCOME_IMAGE } from '@/lib/brand';
+import { Logo } from './Logo';
 import { Button, cx } from './ui';
-
-/** The product's mark: a tick in a rounded square. `draw` animates the tick being written. */
-function Mark({ className, draw }: { className?: string; draw?: boolean }) {
-  return (
-    <svg viewBox="0 0 48 48" className={className} aria-hidden>
-      <rect width="48" height="48" rx="13" fill="currentColor" opacity="0.14" />
-      <path
-        d="M14 25.5l7 7L34.5 17"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="4.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        pathLength={1}
-        className={draw ? 'splash-tick' : undefined}
-      />
-    </svg>
-  );
-}
 
 /**
  * Shown while the app starts. It is in the first paint, so nothing flashes before it.
@@ -68,7 +50,7 @@ export function Splash({ play, onDone }: { play: boolean; onDone: () => void }) 
         leaving && 'pointer-events-none -translate-y-4 opacity-0',
       )}
     >
-      <Mark draw className="h-14 w-14 text-spruce-300" />
+      <Logo animate tone="dark" className="h-16 w-16" />
       <p className="mt-5 text-center text-[2.25rem] font-semibold leading-none tracking-[-0.03em] sm:text-[3rem]">
         {[...PRODUCT_NAME].map((letter, i) => (
           <span
@@ -88,7 +70,7 @@ export function Splash({ play, onDone }: { play: boolean; onDone: () => void }) 
 
 const POINTS = [
   'About 15 minutes if your numbers are ready',
-  'Checks that your books add up before you file',
+  'Shows what the tax rules saved you, in dollars',
   'Switching? Bring in last year’s return from a PDF',
 ];
 
@@ -111,14 +93,15 @@ export function Welcome({
       <main className="flex items-center px-6 py-10 sm:px-10 lg:px-14 xl:px-20">
         <div className="welcome-rise mx-auto w-full max-w-[28rem]">
           <p className="flex items-center gap-2.5 font-semibold tracking-[-0.01em] text-spruce-900">
-            <Mark className="h-8 w-8 text-spruce-700" /> {PRODUCT_NAME}
+            <Logo className="h-8 w-8" /> {PRODUCT_NAME}
           </p>
           <h1 className="mt-8 text-[2rem] font-semibold leading-[1.1] tracking-[-0.03em] text-ink sm:text-[2.5rem]">
-            Your corporate tax return, in plain language.
+            Corporate tax, on autopilot.
           </h1>
           <p className="mt-4 text-[1.0625rem] leading-relaxed text-sub">
-            A T2 return for small businesses and corporations in Canada. Answer questions about your year and
-            watch the tax add up as you go.
+            Plug in your numbers for the year. {PRODUCT_NAME} does the tax accounting, fills in the CRA
+            forms and makes sure the books add up, so your T2 return comes out finished. Built for small
+            businesses and corporations in Canada.
           </p>
 
           <ul className="mt-7 space-y-3 text-[0.9375rem] text-ink">

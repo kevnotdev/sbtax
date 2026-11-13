@@ -5,12 +5,14 @@ import { dateLong, money, percent } from '@/lib/format';
 import type { StepId } from '@/lib/tax-engine/checks';
 import { PROVINCES } from '@/lib/tax-engine/rates';
 import type { Calculation, ReturnData } from '@/lib/tax-engine/types';
+import type { Savings } from '@/lib/tax-engine/savings';
+import { SavingsCard } from './SavingsCard';
 import { cx } from './ui';
 
 /** The running return: every figure links to the step that produced it. */
 export function Summary({
-  data, calc, go,
-}: { data: ReturnData; calc: Calculation; go: (s: StepId, anchor?: string) => void }) {
+  data, calc, savings, go,
+}: { data: ReturnData; calc: Calculation; savings: Savings; go: (s: StepId, anchor?: string) => void }) {
   const hasNumbers = data.hadActivity !== null;
   const refund = calc.balanceOwing < 0;
   const province = data.company.province ? PROVINCES[data.company.province].name : 'Provincial';
@@ -28,6 +30,7 @@ export function Summary({
   }
 
   return (
+    <>
     <div className="rounded-2xl bg-ground p-6">
       <p className="text-sm font-medium text-sub">{refund ? 'Refund' : 'Tax owing'}</p>
       <p className="mt-1 text-[2rem] font-semibold leading-none tracking-[-0.03em] text-ink tabular-nums">
@@ -68,6 +71,8 @@ export function Summary({
         </div>
       )}
     </div>
+    <SavingsCard savings={savings} compact />
+    </>
   );
 }
 

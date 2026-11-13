@@ -70,16 +70,22 @@
   animation: anchor-flash 2.4s ease-out;
 }
 
-/* Launch screen: the tick is written, the name rises in letter by letter, a rule draws under it. */
+/* Launch screen: the plane flies in along its trail, the name rises in letter by letter, a rule draws under it. */
 @keyframes splash-letter {
   from {
     opacity: 0;
     transform: translateY(0.5em);
   }
 }
-@keyframes splash-tick {
+@keyframes logo-trail {
   from {
     stroke-dashoffset: 1;
+  }
+}
+@keyframes logo-plane {
+  from {
+    opacity: 0;
+    transform: translate(-14px, 14px) scale(0.8);
   }
 }
 @keyframes splash-rule {
@@ -96,9 +102,14 @@
 .splash-letter {
   animation: splash-letter 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-.splash-tick {
+.logo-trail {
   stroke-dasharray: 1;
-  animation: splash-tick 0.5s 0.05s ease-out both;
+  animation: logo-trail 0.45s 0.05s ease-out both;
+}
+.logo-plane {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: logo-plane 0.6s 0.15s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .splash-rule {
   animation: splash-rule 0.6s 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;

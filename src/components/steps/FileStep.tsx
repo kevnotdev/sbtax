@@ -7,9 +7,10 @@ import { DEMO_FILING, FILING_FEE } from '@/lib/brand';
 import { readyToFile, yearStillOpen } from '@/lib/tax-engine/checks';
 import { dateLong, formatBusinessNumber, money } from '@/lib/format';
 import { Button, Callout, Row, Section, StepFooter, StepHeader, TextField } from '../ui';
+import { SavingsCard } from '../SavingsCard';
 
 export function FileStep({
-  data, calc, issues, update, go, back, filing, onFiled,
+  data, calc, issues, savings, update, go, back, filing, onFiled,
 }: StepProps & { filing: DemoFiling | null; onFiled: (f: DemoFiling | null) => void }) {
   const [certified, setCertified] = useState(false);
   const certifyId = useId();
@@ -43,6 +44,10 @@ export function FileStep({
             <Row label="Demo reference" value={filing.reference} />
           </dl>
         </div>
+
+        {savings.items.length > 0 && (
+          <div className="mt-6"><SavingsCard savings={savings} /></div>
+        )}
 
         <Section title="What would happen next, once filing is live">
           <ol className="space-y-4 text-[0.9375rem] leading-relaxed text-sub">

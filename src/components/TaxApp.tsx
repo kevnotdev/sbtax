@@ -8,9 +8,12 @@ import { calculate, isDate } from '@/lib/tax-engine/calculator';
 import { findIssues, stepStatus, type Issue, type StepId, type StepStatus } from '@/lib/tax-engine/checks';
 import { EMPTY_RETURN, SAMPLE_RETURN } from '@/lib/tax-engine/sample';
 import type { Calculation, ReturnData } from '@/lib/tax-engine/types';
+import type { Savings } from '@/lib/tax-engine/savings';
 import { cx } from './ui';
 import { Summary } from './Summary';
 import { Splash, Welcome } from './Welcome';
+import { Logo } from './Logo';
+import { findSavings } from '@/lib/tax-engine/savings';
 import { StartStep } from './steps/StartStep';
 import { CompanyStep } from './steps/CompanyStep';
 import { IncomeStep } from './steps/IncomeStep';
@@ -29,6 +32,7 @@ export interface StepProps {
   data: ReturnData;
   calc: Calculation;
   issues: Issue[];
+  savings: Savings;
   update: (change: (d: ReturnData) => ReturnData) => void;
   /** Opens a step. With an anchor, brings that field into view and puts the cursor in it. */
   go: (step: StepId, anchor?: string) => void;
@@ -140,6 +144,7 @@ export default function TaxApp() {
 
   const calc = useMemo(() => calculate(data), [data]);
   const issues = useMemo(() => findIssues(data, calc, today()), [data, calc]);
+  const savings = useMemo(() => findSavings(data, calc), [data, calc]);
 
   const steps = useMemo(
     () => ALL_STEPS.filter(s => !(calc.isNil && (s === 'expenses' || s === 'equipment'))),
@@ -200,7 +205,7 @@ export default function TaxApp() {
   };
 
   const props: StepProps = {
-    data, calc, issues, update, go,
+    data, calc, issues, savings, update, go,
     next: index < steps.length - 1 ? () => go(steps[index + 1]) : undefined,
     back: index > 0 ? () => go(steps[index - 1]) : undefined,
   };
@@ -263,7 +268,9 @@ export default function TaxApp() {
       <aside className="bg-spruce-900 text-spruce-100 lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:overflow-y-auto">
         <div className="flex items-center justify-between gap-3 px-5 py-4 lg:block lg:px-6 lg:pb-6 lg:pt-7">
           <div className="min-w-0">
-            <p className="text-[1.0625rem] font-semibold tracking-[-0.01em] text-white">{PRODUCT_NAME}</p>
+            <p className="flex items-center gap-2.5 text-[1.0625rem] font-semibold tracking-[-0.01em] text-white">
+              <Logo tone="dark" className="h-7 w-7 shrink-0" /> {PRODUCT_NAME}
+            </p>
             {company && <p className="mt-1 truncate text-sm text-spruce-100">{company}</p>}
             <p className="truncate text-sm text-spruce-300">{yearLabel}</p>
           </div>
@@ -338,7 +345,7 @@ export default function TaxApp() {
 
           <aside aria-label="Tax summary" className="hidden xl:block">
             <div className="sticky top-14">
-              {loaded && <Summary data={data} calc={calc} go={go} />}
+              {loaded && <Summary data={data} calc={calc} savings={savings} go={go} />}
             </div>
           </aside>
         </div>

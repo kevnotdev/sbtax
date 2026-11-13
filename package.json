@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx --test src/lib/tax-engine/calculator.test.ts src/lib/import/prior-return.test.ts",
+    "test": "tsx --test src/lib/tax-engine/calculator.test.ts src/lib/tax-engine/savings.test.ts src/lib/import/prior-return.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -10,8 +10,9 @@ import {
 } from '@/lib/tax-engine/rates';
 import { dateLong, formatBusinessNumber, money, percent } from '@/lib/format';
 import { Row, Section, StepFooter, StepHeader, Suggestions } from '../ui';
+import { SavingsCard } from '../SavingsCard';
 
-export function ReviewStep({ data, calc, issues, update, go, next, back }: StepProps) {
+export function ReviewStep({ data, calc, issues, savings, update, go, next, back }: StepProps) {
   const blockers = issues.filter(i => i.level === 'blocker' && i.step !== 'file');
   const warnings = issues.filter(i => i.level === 'warning');
   const notes = issues.filter(i => i.level === 'note');
@@ -103,6 +104,12 @@ export function ReviewStep({ data, calc, issues, update, go, next, back }: StepP
           </p>
         )}
       </Section>
+
+      {savings.items.length > 0 && (
+        <Section title="What the tax rules saved you" hint="Worked out from this return’s own numbers.">
+          <SavingsCard savings={savings} />
+        </Section>
+      )}
 
       {notes.length > 0 && (
         <Section title="Also on your list" hint="These are separate from the T2 return, so they’re easy to miss.">

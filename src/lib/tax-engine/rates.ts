@@ -12,6 +12,8 @@ export const FEDERAL_BASE_RATE = 0.38;
 export const FEDERAL_ABATEMENT = 0.10;
 export const SMALL_BUSINESS_DEDUCTION = 0.19;
 export const FEDERAL_SMALL_BUSINESS_RATE = 0.09;
+/** Federal rate on income that does not get the small business deduction: 38% less 10% abatement less 13% general reduction. */
+export const FEDERAL_GENERAL_RATE = 0.15;
 
 /** Federal business limit for a full year. Prorated for short tax years. */
 export const BUSINESS_LIMIT = 500_000;
