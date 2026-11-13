@@ -39,7 +39,12 @@ function describe(found: PriorReturn): Line[] {
 function stillNeeded(found: PriorReturn): string[] {
   const out = ['Incorporation date', 'Head office address'];
   if (!found.shareCapital) out.push('Amount paid for the company’s shares');
-  out.push('Equipment balances from Schedule 8, if the company has any');
+  if (!found.lossesCarriedForward && (found.netIncomeForTax?.value ?? 0) < 0) {
+    out.push('Unused losses from Schedule 4');
+  }
+  out.push(found.hasEquipmentSchedule
+    ? 'Equipment balances: your return has a Schedule 8, so copy its closing balances on the Equipment step'
+    : 'Equipment balances from Schedule 8, if the company has any');
   return out;
 }
 
@@ -52,10 +57,10 @@ export function ImportPriorReturn({ update, go }: Pick<StepProps, 'update' | 'go
     if (!file) return;
     setState({ kind: 'reading' });
     try {
-      const { readPdfLines } = await import('@/lib/import/read-pdf');
-      const { lines, creator } = await readPdfLines(file);
-      const found = parsePriorReturn(lines, creator);
-      if (lines.length === 0) {
+      const { readPdfPages } = await import('@/lib/import/read-pdf');
+      const { pages, creator } = await readPdfPages(file);
+      const found = parsePriorReturn(pages, creator);
+      if (pages.every(p => p.length === 0)) {
         setState({ kind: 'error', message: 'That PDF has no readable text. It may be a scan. Use the copy your tax software saved, not a photo or scan of a printout.' });
       } else if (!looksLikeReturn(found)) {
         setState({ kind: 'error', message: 'We couldn’t find a T2 return in that file. Choose the full copy of the return your tax software saved as a PDF.' });
@@ -132,8 +137,10 @@ export function ImportPriorReturn({ update, go }: Pick<StepProps, 'update' | 'go
               </dl>
               {found.netIncomeForTax && found.netIncomeForTax.value < 0 && (
                 <p className="mt-3 text-sm leading-relaxed text-sub">
-                  That year was a loss of {money(-found.netIncomeForTax.value)} for tax. It’s included in the
-                  unused losses above.
+                  That year was a loss of {money(-found.netIncomeForTax.value)} for tax.{' '}
+                  {found.lossesCarriedForward
+                    ? 'It’s included in the unused losses above.'
+                    : 'We couldn’t find Schedule 4 in this file, so check it for unused losses and enter them on the Year-end balances step.'}
                 </p>
               )}
               <div className="mt-5 flex flex-wrap gap-2">
