@@ -8,7 +8,8 @@ import { Button, cx } from './ui';
 
 /**
  * Shown while the app starts. It is in the first paint, so nothing flashes before it.
- * When `play` turns true it holds for a moment, then lifts away and calls `onDone`.
+ * When `play` turns true it finishes its entrance, then lifts away and calls `onDone`.
+ * It plays on every load, including reloads, over whichever screen comes next.
  */
 export function Splash({ play, onDone }: { play: boolean; onDone: () => void }) {
   const [leaving, setLeaving] = useState(false);

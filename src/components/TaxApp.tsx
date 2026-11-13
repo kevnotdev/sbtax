@@ -216,17 +216,6 @@ export default function TaxApp() {
   startedRef.current = started;
   const endSplash = useCallback(() => setSplashGone(true), []);
 
-  if (!loaded || welcome) {
-    return (
-      <>
-        {loaded && (
-          <Welcome key="welcome" onStart={() => go('start')} onSample={loadSample} onImport={() => go('start', 'import')} />
-        )}
-        {!splashGone && <Splash key="splash" play={loaded} onDone={endSplash} />}
-      </>
-    );
-  }
-
   const nav = (
     <ol className="space-y-0.5">
       {steps.map(s => {
@@ -255,7 +244,7 @@ export default function TaxApp() {
     </ol>
   );
 
-  return (
+  const app = (
     <div className="min-h-screen lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
       <a
         href="#main"
@@ -366,6 +355,17 @@ export default function TaxApp() {
         </button>
       )}
     </div>
+  );
+
+  // The splash sits over whichever screen comes next and keeps its place in the tree while that
+  // screen loads beneath it, so its animation plays through once and is never restarted.
+  return (
+    <>
+      {loaded && (welcome ? (
+        <Welcome key="welcome" onStart={() => go('start')} onSample={loadSample} onImport={() => go('start', 'import')} />
+      ) : app)}
+      {!splashGone && <Splash key="splash" play={loaded} onDone={endSplash} />}
+    </>
   );
 }
 
