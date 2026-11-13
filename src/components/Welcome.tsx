@@ -86,8 +86,8 @@ export function Welcome({
         <img src={WELCOME_IMAGE.src} alt={WELCOME_IMAGE.alt} className="absolute inset-0 h-full w-full object-cover object-[center_60%] lg:object-center" />
         <div className="absolute inset-0 bg-gradient-to-t from-spruce-950/90 via-spruce-950/25 to-transparent" aria-hidden />
         <p className="absolute inset-x-0 bottom-0 hidden p-10 text-4xl font-semibold leading-[1.1] tracking-tight text-white lg:block xl:p-14 xl:text-5xl xl:leading-[1.08]">
-          Tax time,
-          <span className="block">minus the stress.</span>
+          File with confidence.
+          <span className="block">Skip the stress.</span>
           <span className="mt-4 block text-lg font-medium leading-snug tracking-normal text-spruce-100/85 xl:text-xl">
             Your numbers in. A finished return out.
           </span>
